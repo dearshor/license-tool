@@ -3,26 +3,15 @@
  */
 package com.mayisoft.license.util;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.SecureRandom;
-import java.security.Signature;
-import java.util.Calendar;
+import net.sf.json.JSONObject;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
-
-import net.sf.json.JSONObject;
+import java.io.*;
+import java.security.*;
+import java.util.Calendar;
+import java.util.logging.Logger;
 
 /**
  * @author yuan
@@ -30,7 +19,9 @@ import net.sf.json.JSONObject;
  */
 public class LicenseGenerator {
 
-	/**
+    private static Logger logger = Logger.getLogger(LicenseGenerator.class.getName());
+
+    /**
 	 * 进行MD5加密
 	 * 
 	 * @param info
@@ -312,19 +303,28 @@ public class LicenseGenerator {
 //		expireCal.add(Calendar.MONTH, 6);//半年授权
 //		expireCal.add(Calendar.MONTH, 12);//1年授权
 //		expireCal.add(Calendar.YEAR, 99);//永久授权
-		System.out.println(String.format("%tF",expireCal.getTime(),expireCal.getTime()));
+		logger.info(String.format("%tF",expireCal.getTime(),expireCal.getTime()));
 		JSONObject plainInfo = new JSONObject();
 		plainInfo.accumulate("ma", macAddress);
 		plainInfo.accumulate("em", email);
 		plainInfo.accumulate("ex", expireCal.getTimeInMillis());
-		System.out.println(plainInfo.toString());
+		logger.info(plainInfo.toString());
 		LicenseGenerator licenseGen = new LicenseGenerator();
 //		String algorithm = "DESede";
 //		SecretKey key = licenseGen.createSecretKey(algorithm);
 //		String enctyptInfo = licenseGen.encryptToDES(key, algorithm, plainInfo.toString());
 		licenseGen.createPairKey();
-		licenseGen.signToInfo(plainInfo.toString(), "license.lic");
-		System.out.println("成功生成授权文件");
+        String signfile = new StringBuilder(System.getProperty("java.io.tmpdir")).append(File.separator)
+                .append("license-tool").append(File.separator).append("license.lic").toString();
+        File destDir = new File(signfile).getParentFile();
+        /*if (!destDir.isDirectory()) {
+            throw new IllegalArgumentException(destDir.getPath());
+        }*/
+        if (!destDir.exists()) {
+            destDir.mkdirs();
+        }
+        licenseGen.signToInfo(plainInfo.toString(), signfile);
+        logger.info("成功生成授权文件: " + signfile);
 	}
 
 }
